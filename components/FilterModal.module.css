@@ -1,0 +1,86 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  width: 100%;
+  border-radius: 24px 24px 0 0;
+  padding: 24px 20px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.modalHeader {
+  text-align: center;
+}
+
+.modalHeader h2 {
+  font-family: Pretendard;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 28px;
+  color: var(--grey-100, #212529);
+  margin: 0;
+}
+
+.modalContent {
+  padding-bottom: 24px;
+}
+
+.chipContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: flex;
+  padding: 8px 16px;
+  justify-content: center;
+  align-items: center;
+  border-radius: 100px;
+  border: 1px solid var(--grey-40, #DEE2E6);
+  background: white;
+  color: var(--grey-100, #212529);
+  font-family: Pretendard;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  cursor: pointer;
+}
+
+.chip.selected {
+  background: #7577FF;
+  border-color: #7577FF;
+  color: white;
+}
+
+.confirmButton {
+  display: flex;
+  height: 56px;
+  padding: 10px;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  align-self: stretch;
+  border-radius: 300px;
+  background: #7577FF;
+  color: white;
+  font-family: Pretendard;
+  font-size: 18px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+} 

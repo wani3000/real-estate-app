@@ -1,0 +1,53 @@
+:root {
+  /* Colors */
+  --grey-100: #212529;
+  --grey-80: #495057;
+  --grey-70: #868E96;
+  --grey-60: #ADB5BD;
+  --grey-30: #DEE2E6;
+  --primary: #7577FF;
+  --white: #FFFFFF;
+
+  /* Typography */
+  --font-family: 'Pretendard';
+
+  /* Pretendard/Bold/Title1 */
+  --typography-title1: 500 28px/36px var(--font-family);
+  --typography-title1-spacing: -0.28px;
+
+  /* Pretendard/Bold/Title2 */
+  --typography-title2: 700 24px/32px var(--font-family);
+  --typography-title2-spacing: -0.24px;
+
+  /* Pretendard/Bold/Body2 */
+  --typography-bold-body2: 700 18px/26px var(--font-family);
+  --typography-bold-body2-spacing: -0.18px;
+
+  /* Pretendard/Bold/Body3 */
+  --typography-bold-body3: 700 16px/24px var(--font-family);
+  --typography-bold-body3-spacing: -0.16px;
+
+  /* Pretendard/Medium/Body1 */
+  --typography-body1: 500 20px/28px var(--font-family);
+  --typography-body1-spacing: -0.4px;
+
+  /* Pretendard/Medium/Body2 */
+  --typography-body2: 500 18px/26px var(--font-family);
+  --typography-body2-spacing: -0.36px;
+
+  /* Pretendard/Medium/Body3 */
+  --typography-body3: 500 16px/24px var(--font-family);
+  --typography-body3-spacing: -0.32px;
+
+  /* Pretendard/Regular/Body4 */
+  --typography-body4: 400 15px/22px var(--font-family);
+  --typography-body4-spacing: -0.3px;
+
+  /* Pretendard/Medium/Label2 */
+  --typography-label2: 500 13px/18px var(--font-family);
+  --typography-label2-spacing: -0.26px;
+
+  /* Pretendard/Regular/Caption */
+  --typography-caption: 400 13px/20px var(--font-family);
+  --typography-caption-spacing: -0.26px;
+} 

@@ -1,0 +1,35 @@
+.header {
+  padding: 12px 20px;
+  position: relative;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.backButton {
+  background: none;
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-left: -8px;
+}
+
+.editIncomeButton {
+  display: flex;
+  padding: 8px 10px;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  border-radius: 4px;
+  background: var(--grey-20, #F1F3F5);
+  border: none;
+  cursor: pointer;
+  font-family: Pretendard;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--grey-100, #212529);
+} 

@@ -1,0 +1,144 @@
+.container {
+  width: 375px;
+  margin: 0 auto;
+  padding: 0 20px;
+  min-height: 100vh;
+  background: #FFFFFF;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.main {
+  padding: 40px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+  margin-bottom: 12px;
+  color: #1A1A1A;
+  width: 100%;
+}
+
+.description {
+  font-size: 16px;
+  line-height: 1.5;
+  text-align: center;
+  color: #666666;
+  margin-bottom: 40px;
+  width: 100%;
+}
+
+.cardContainer {
+  width: 100vw;
+  overflow: hidden;
+  margin: 2rem -20px;
+  position: relative;
+}
+
+.grid {
+  display: flex;
+  gap: 10px;
+  animation: scroll 30s linear infinite;
+  width: fit-content;
+  padding: 0 20px;
+}
+
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(calc(-232px * 4));  /* 이미지 너비(222px) + 간격(10px) * 4장 */
+  }
+}
+
+.card {
+  flex: 0 0 222px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.cardImage {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.cardTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1A1A1A;
+  margin: 0;
+  margin-bottom: 4px;
+}
+
+.cardSubtitle {
+  font-size: 16px;
+  color: #666666;
+  margin: 0;
+  margin-bottom: 8px;
+}
+
+.cardPrice {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1A1A1A;
+  margin: 0;
+}
+
+.buttonContainer {
+  position: fixed;
+  bottom: 40px;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 0 20px;
+  background: #FFFFFF;
+  width: 375px;
+  margin: 0 auto;
+}
+
+.startButton {
+  display: flex;
+  height: 56px;
+  padding: 10px;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  border-radius: 300px;
+  background: #7577FF;
+  border: none;
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+}
+
+.shareButton {
+  display: flex;
+  height: 56px;
+  padding: 10px;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  border-radius: 300px;
+  background: #F8F9FA;
+  border: none;
+  color: #1A1A1A;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+} 

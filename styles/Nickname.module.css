@@ -1,0 +1,105 @@
+px.container {
+  min-height: 100vh;
+  background: #FFFFFF;
+  padding: 0;
+}
+
+.header {
+  padding: 12px 20px;
+  position: relative;
+  height: 48px;
+  display: flex;
+  align-items: center;
+}
+
+.backButton {
+  background: none;
+  border: none;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-left: -8px;
+}
+
+.main {
+  padding: 0 20px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #1A1A1A;
+  margin-bottom: 40px;
+}
+
+.inputGroup {
+  margin-bottom: 24px;
+}
+
+.label {
+  display: block;
+  color: var(--grey-100, #212529);
+  font-family: Pretendard;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 24px;
+  letter-spacing: -0.16px;
+  margin-bottom: 8px;
+}
+
+.input {
+  display: flex;
+  width: 100%;
+  height: 56px;
+  padding: 10px 12px;
+  align-items: center;
+  gap: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--grey-40, #DEE2E6);
+  font-family: Pretendard;
+  font-size: 16px;
+  outline: none;
+}
+
+.input::placeholder {
+  color: var(--grey-60);
+}
+
+.input:focus {
+  border-color: #7577FF;
+}
+
+.buttonContainer {
+  position: fixed;
+  bottom: 40px;
+  left: 0;
+  right: 0;
+  padding: 0 20px;
+  background: #FFFFFF;
+}
+
+.nextButton {
+  display: flex;
+  height: 56px;
+  padding: 10px;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  border-radius: 300px;
+  background: #7577FF;
+  border: none;
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+}
+
+.nextButton:disabled {
+  background-color: var(--grey-30);
+  cursor: not-allowed;
+} 

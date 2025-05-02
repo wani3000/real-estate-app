@@ -1,0 +1,336 @@
+.container {
+  width: 375px;
+  margin: 0 auto;
+  background-color: white;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  height: calc(100vh - 56px);
+  margin-top: 0;
+  background-color: white;
+}
+
+.stickyHeader {
+  position: sticky;
+  top: 0;
+  background-color: white;
+  z-index: 100;
+  padding: 20px 20px 0;
+  border-bottom: 1px solid var(--grey-40, #DEE2E6);
+}
+
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.title {
+  color: var(--grey-100, #212529);
+  font-family: Pretendard;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 32px;
+  letter-spacing: -0.24px;
+  margin: 0 0 24px;
+}
+
+.nickname {
+  color: var(--sticky-7577FF, #7577FF);
+  font-family: Pretendard;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 32px;
+  letter-spacing: -0.24px;
+}
+
+.editIncomeButton {
+  display: flex;
+  padding: 8px 10px;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  border-radius: 4px;
+  background: var(--grey-20, #F1F3F5);
+  color: var(--grey-80, #495057);
+  font-family: var(--font-family-Pretendard, Pretendard);
+  font-size: var(--font-size-Label-2, 13px);
+  font-style: normal;
+  font-weight: 500;
+  line-height: var(--font-line-height-Label-2-normal, 18px);
+  letter-spacing: -0.26px;
+  border: none;
+  cursor: pointer;
+}
+
+.tabs {
+  display: flex;
+  gap: 20px;
+  background-color: white;
+  padding: 0;
+}
+
+.tab {
+  display: flex;
+  width: 160px;
+  padding: 10px 0;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: Pretendard;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 26px;
+  letter-spacing: -0.18px;
+  color: var(--grey-80, #495057);
+}
+
+.tab.active {
+  border-bottom: 2px solid var(--sticky-7577FF, #7577FF);
+  color: var(--sticky-7577FF, #7577FF);
+  margin-bottom: -1px;
+}
+
+.scrollContent {
+  padding: 20px;
+  background-color: white;
+}
+
+.conditionText {
+  color: var(--sticky-7577FF, #7577FF);
+  font-family: Pretendard;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 24px;
+  letter-spacing: -0.16px;
+  margin-bottom: 16px;
+}
+
+.maxAmountContainer {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.maxAmount {
+  color: var(--sticky-7577FF, #7577FF);
+  font-family: Pretendard;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 24px; 
+  letter-spacing: -0.16px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+.questionButton {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.apartmentCount {
+  color: var(--grey-80, #495057);
+  font-family: Pretendard;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.apartmentList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.apartmentItem {
+  display: flex;
+  padding: 16px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  align-self: stretch;
+  border-radius: 8px;
+  background: #F8F9FA;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.apartmentItem:hover {
+  transform: translateY(-2px);
+}
+
+.apartmentTitle {
+  color: var(--grey-100, #212529);
+  font-family: Pretendard;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 26px;
+  margin: 0;
+}
+
+.location {
+  color: var(--grey-80, #495057);
+  font-family: Pretendard;
+  font-size: 14px;
+  line-height: 20px;
+  margin: 0;
+}
+
+.price {
+  color: var(--grey-100, #212529);
+  font-family: Pretendard;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 24px;
+  margin: 0;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100%;
+  background-color: white;
+}
+
+.apartmentLoading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  width: 100%;
+  background-color: #F8F9FA;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+  text-align: center;
+}
+
+.lottieContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.backButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+.emptyApartmentList {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 60px 0;
+  margin-top: 20px;
+  background-color: white;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.emptyMessage {
+  color: var(--grey-60, #ADB5BD);
+  font-family: Pretendard;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: -0.14px;
+  margin: 0;
+}
+
+/* 모달 스타일 */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  width: 335px;
+  background-color: white;
+  border-radius: 12px;
+  padding: 24px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.modalHeader h3 {
+  color: var(--grey-100, #212529);
+  font-family: Pretendard;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 26px;
+  margin: 0;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.modalBody {
+  color: var(--grey-80, #495057);
+  font-family: Pretendard;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.modalBody p {
+  margin-bottom: 12px;
+}
+
+.modalBody ul {
+  padding-left: 20px;
+  margin-bottom: 16px;
+}
+
+.modalBody li {
+  margin-bottom: 8px;
+} 

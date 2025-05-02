@@ -1,0 +1,235 @@
+.container {
+  width: 375px;
+  margin: 0 auto;
+  padding: 0 0 40px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: white;
+  position: relative;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  margin-bottom: 16px;
+}
+
+.backButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 20px;
+  flex: 1;
+}
+
+.card {
+  display: flex;
+  width: 302px;
+  height: 416px;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  border-radius: 12px;
+  box-sizing: border-box;
+  padding: 40px 0;
+  position: relative;
+}
+
+.card.illustration1 {
+  background: var(--blue, linear-gradient(180deg, #EEF 0%, #FFF 50%, #EEF 100%));
+}
+
+.card.illustration2 {
+  background: var(--02, linear-gradient(180deg, #FEC69E 0%, #FFF 50%, #FFF0E5 100%));
+}
+
+.card.illustration3 {
+  background: var(--03, linear-gradient(180deg, #A6E9FF 0%, #FFF 50%, #DEF7FF 100%));
+}
+
+.card.illustration4 {
+  background: var(--04, linear-gradient(180deg, #FFE799 0%, #FFF 50%, #FFF5D4 100%));
+}
+
+.title {
+  color: var(--grey-100, #212529);
+  text-align: center;
+  font-family: Pretendard;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 24px;
+  letter-spacing: -0.16px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.apartmentInfo {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  margin-top: 10px;
+}
+
+.cityImage {
+  width: 100%;
+  height: 180px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.cityImage img {
+  width: auto !important;
+  height: auto !important;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.textContent {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: auto;
+}
+
+.location {
+  text-align: center;
+  font-family: Pretendard;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 28px;
+  letter-spacing: -0.2px;
+  margin: 0;
+  padding: 0;
+}
+
+.card.illustration1 .location {
+  color: #303CFF;
+}
+
+.card.illustration2 .location {
+  color: #FF5903;
+}
+
+.card.illustration3 .location {
+  color: #00B2FF;
+}
+
+.card.illustration4 .location {
+  color: #FFC01B;
+}
+
+.district {
+  color: var(--grey-80, #495057);
+  text-align: center;
+  font-family: Pretendard;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  margin: 4px 0 10px;
+  padding: 0;
+}
+
+.price {
+  color: var(--grey-100, #212529);
+  text-align: center;
+  font-family: Pretendard;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 32px;
+  letter-spacing: -0.24px;
+  margin: 0;
+  padding: 0;
+}
+
+.buttonGroup {
+  width: 100%;
+  display: flex;
+  gap: 12px;
+  padding: 0 20px;
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 375px;
+}
+
+.saveButton {
+  display: flex;
+  height: 56px;
+  padding: 10px;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  flex: 1 0 0;
+  border-radius: 300px;
+  border: 1px solid var(--grey-60, #ADB5BD);
+  background: white;
+  color: var(--grey-100, #212529);
+  font-family: Pretendard;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.shareButton {
+  display: flex;
+  height: 56px;
+  padding: 10px;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  flex: 1 0 0;
+  border-radius: 300px;
+  background: #7577FF;
+  border: none;
+  color: white;
+  font-family: Pretendard;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100%;
+  font-size: 18px;
+  color: #666;
+}
+
+.error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100%;
+  font-size: 18px;
+  color: #e74c3c;
+} 
