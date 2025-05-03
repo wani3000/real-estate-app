@@ -6,6 +6,7 @@ import { useRouter } from 'next/router'
 import styles from '../styles/Result.module.css'
 import { useFormData } from '../context/FormContext'
 import dynamic from 'next/dynamic'
+import axios from 'axios'
 
 // Lottie 컴포넌트를 클라이언트 사이드에서만 렌더링하도록 설정
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false })
@@ -146,38 +147,54 @@ export default function Result() {
 
   // 최대 구매 가능 금액 계산 함수
   const calculateMaxPurchaseAmount = (income, assets) => {
-    // 소득과 자산을 숫자로 변환
-    const parsedIncome = parseInt(income, 10) * 10000 || 0; // 만원 단위를 원 단위로 변환
-    const parsedAssets = parseInt(assets, 10) * 10000 || 0; // 만원 단위를 원 단위로 변환
+    // 소득과 자산을 숫자로 변환 (빈 값이면 기본값 사용)
+    const parsedIncome = parseInt(income, 10) || 5000; // 기본값 5000만원
+    const parsedAssets = parseInt(assets, 10) || 10000; // 기본값 1억원
+    
+    console.log(`소득: ${parsedIncome}만원, 자산: ${parsedAssets}만원으로 최대 구매 가능 금액 계산 중`);
+    
+    // 소득과 자산을 원 단위로 변환
+    const incomeWon = parsedIncome * 10000; // 만원 단위를 원 단위로 변환
+    const assetsWon = parsedAssets * 10000; // 만원 단위를 원 단위로 변환
     
     // 금리 설정
     const interestRate = 0.035; // 3.5%
     
-    // 갭투자: 신용대출(연소득의 120%) + 보유 자산 + 전세가(가정: 매매가의 70%)
-    // 여기서는 간단히 신용대출 + 자산만 계산 (전세가는 개별 아파트에 따라 다르므로 제외)
-    const creditLoanAmount = parsedIncome * 1.2;
-    const maxGapAmount = parsedAssets + creditLoanAmount;
+    // 1. 실거주 계산: DSR 50%, 40년 만기, LTV 70% 기준 계산 (2025년 기준)
+    // 원리금 균등상환 상환계수 0.0493 (3.5% 금리, 40년 기준)
+    const dsrRatio = 0.5; // DSR 50%
+    const annualPaymentRatio = 0.0493; // 상환계수
     
-    // 실거주: DSR 40%, 40년 만기, LTV 70% 기준 계산
-    // 원리금 균등상환 계산식을 사용하여 대출 가능 금액 계산
-    const dsrRatio = 0.4;
-    const annualRepayment = parsedIncome * dsrRatio;
-    const monthlyRepayment = annualRepayment / 12;
-    const monthlyInterestRate = interestRate / 12;
-    const loanTermMonths = 40 * 12;
+    // 연간 상환 가능액 = 연소득 × 0.5
+    const annualPayment = incomeWon * dsrRatio;
     
-    const numerator = Math.pow(1 + monthlyInterestRate, loanTermMonths) - 1;
-    const denominator = monthlyInterestRate * Math.pow(1 + monthlyInterestRate, loanTermMonths);
+    // 대출 가능 금액 = 연간 상환 가능액 ÷ 상환계수(0.0493)
+    const maxLoanAmount = annualPayment / annualPaymentRatio;
     
-    // 최대 대출 가능 금액
-    const maxLoanAmount = monthlyRepayment * numerator / denominator;
+    // LTV 제한 적용 금액 = 대출 가능 금액 ÷ 0.7
+    const ltvLimitAmount = maxLoanAmount / 0.7;
     
-    // LTV 70% 기준 최대 구매 가능 아파트 가격
-    const maxLiveAmount = (maxLoanAmount / 0.7) + parsedAssets;
+    // 최대 구매 가능 금액 = min(LTV 제한 적용 금액, 대출 가능 금액 + 보유금액)
+    const maxLiveAmount = Math.min(ltvLimitAmount, maxLoanAmount + assetsWon);
+    
+    // 2. 갭투자 계산 
+    // 신용대출(연소득의 120%)
+    const creditLoanAmount = incomeWon * 1.2;
+    
+    // 기본 계산식 (최대 구매 가능 금액 추정용)
+    // 실제로는 전세가를 API에서 가져와 사용하는 것이 정확함
+    // 전세가를 아파트별로 적용하려면 백엔드에서 처리해야 함
+    const maxGapAmount = creditLoanAmount + assetsWon; // 여기에 전세가를 더해야 함
+    
+    // 원 단위를 만원 단위로 변환 (계산 결과를 만원 단위로 반환)
+    const maxLiveAmountInManWon = Math.round(maxLiveAmount / 10000);
+    const maxGapAmountInManWon = Math.round(maxGapAmount / 10000);
+    
+    console.log(`계산된 최대 구매 가능 금액: 실거주=${maxLiveAmountInManWon}만원, 갭투자=${maxGapAmountInManWon}만원(전세가 제외)`);
     
     return {
-      live: Math.round(maxLiveAmount),
-      gap: Math.round(maxGapAmount)
+      live: maxLiveAmountInManWon,
+      gap: maxGapAmountInManWon
     };
   };
 
@@ -186,34 +203,72 @@ export default function Result() {
     // 브라우저에서만 실행
     if (typeof window !== 'undefined') {
       try {
-        // sessionStorage에서 데이터 가져오기
-        const storedData = sessionStorage.getItem('apartmentsData')
-        if (storedData) {
-          const parsedData = JSON.parse(storedData)
-          console.log('세션스토리지에서 데이터 로드:', parsedData)
-          setApartments(parsedData[activeTab] || [])
-          
-          // 계산 파라미터에서 최대 구매 가능 금액 추출
-          const params = JSON.parse(sessionStorage.getItem('calculationParams'))
-          if (params) {
-            setMaxPurchaseAmount({
-              live: params.maxAffordablePriceLive || 0,
-              gap: params.maxAffordablePriceGap || 0
-            })
-          } else {
-            // 세션 스토리지에 계산 데이터가 없는 경우 직접 계산
-            const maxAmounts = calculateMaxPurchaseAmount(formData.income, formData.assets);
-            setMaxPurchaseAmount(maxAmounts);
-          }
-        } else {
-          // 저장된 데이터가 없으면 목업 데이터 사용
-          console.log('저장된 데이터 없음, 목업 데이터 사용')
-          setApartments(mockApartments[activeTab] || [])
-          
-          // 직접 계산
-          const maxAmounts = calculateMaxPurchaseAmount(formData.income, formData.assets);
-          setMaxPurchaseAmount(maxAmounts);
+        // 소득 자산 기본값 설정 (없는 경우)
+        if (!formData.income) {
+          formData.income = '5000'; // 기본 소득 5000만원
         }
+        if (!formData.assets) {
+          formData.assets = '10000'; // 기본 자산 1억원
+        }
+
+        // 최대 구매 가능 금액 계산
+        const maxAmounts = calculateMaxPurchaseAmount(formData.income, formData.assets);
+        setMaxPurchaseAmount(maxAmounts);
+        
+        // 백엔드 API에서 아파트 데이터 가져오기
+        const fetchApartmentsData = async () => {
+          try {
+            // FormData에서 소득과 자산 값 가져오기
+            const income = parseInt(formData.income, 10) || 5000; // 기본값 5000만원
+            const assets = parseInt(formData.assets, 10) || 10000; // 기본값 1억원
+            
+            // 실제 금액 값과 필터 조건 설정
+            const params = {
+              income: income,
+              assets: assets,
+              investmentType: activeTab,
+              households: formData.household || '300세대 이상',
+              yearBuilt: formData.year || '25년 이상'
+            };
+            
+            console.log('API 호출 파라미터:', params);
+            
+            const response = await axios.get('http://localhost:4000/api/apartments', {
+              params
+            });
+            const apiData = response.data;
+            
+            console.log('API에서 데이터 로드:', apiData);
+            
+            // 데이터 세션 스토리지에 저장
+            sessionStorage.setItem('apartmentsData', JSON.stringify(apiData));
+            
+            // 현재 활성 탭에 해당하는 데이터 설정
+            setApartments(apiData[activeTab] || []);
+          } catch (error) {
+            console.error('API 데이터 로드 오류:', error);
+            // 에러 발생 시 세션 스토리지 또는 목업 데이터 사용
+            fallbackToStoredData();
+          }
+        };
+        
+        // 세션 스토리지 또는 목업 데이터로 폴백
+        const fallbackToStoredData = () => {
+          // sessionStorage에서 데이터 가져오기
+          const storedData = sessionStorage.getItem('apartmentsData')
+          if (storedData) {
+            const parsedData = JSON.parse(storedData)
+            console.log('세션스토리지에서 데이터 로드:', parsedData)
+            setApartments(parsedData[activeTab] || [])
+          } else {
+            // 저장된 데이터가 없으면 목업 데이터 사용
+            console.log('저장된 데이터 없음, 목업 데이터 사용')
+            setApartments(mockApartments[activeTab] || [])
+          }
+        };
+        
+        // API 데이터 로드
+        fetchApartmentsData();
       } catch (error) {
         console.error('데이터 로드 오류:', error)
         setApartments(mockApartments[activeTab] || [])
@@ -223,7 +278,7 @@ export default function Result() {
         setMaxPurchaseAmount(maxAmounts);
       }
     }
-  }, [activeTab, formData.income, formData.assets])
+  }, [activeTab, formData.income, formData.assets, formData.household, formData.year])
 
   // 탭 전환 핸들러
   const handleTabChange = (tab) => {

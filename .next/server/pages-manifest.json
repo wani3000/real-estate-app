@@ -1,0 +1,11 @@
+{
+  "/_app": "pages/_app.js",
+  "/_error": "pages/_error.js",
+  "/_document": "pages/_document.js",
+  "/apartment/[id]": "pages/apartment/[id].js",
+  "/loading": "pages/loading.js",
+  "/filter": "pages/filter.js",
+  "/result": "pages/result.js",
+  "/income": "pages/income.js",
+  "/api/apartments": "pages/api/apartments.js"
+}

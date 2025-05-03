@@ -1,0 +1,177 @@
+.container {
+  min-height: 100vh;
+  padding: 0 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  background-color: #f7f8fa;
+}
+
+.main {
+  padding: 2rem 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+  max-width: 800px;
+}
+
+.title {
+  margin: 0;
+  line-height: 1.15;
+  font-size: 2rem;
+  text-align: center;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.description {
+  line-height: 1.5;
+  font-size: 1.2rem;
+  text-align: center;
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.error {
+  text-align: center;
+  padding: 2rem;
+  font-size: 1.2rem;
+  color: #e53e3e;
+  background-color: #fff5f5;
+  border-radius: 0.5rem;
+  width: 100%;
+}
+
+.list {
+  width: 100%;
+}
+
+.empty {
+  text-align: center;
+  padding: 2rem;
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.apartmentList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+}
+
+.apartmentItem {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  transition: transform 0.2s ease;
+}
+
+.apartmentItem:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.apartmentInfo {
+  flex: 1;
+}
+
+.apartmentName {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.4rem;
+  color: #1a365d;
+}
+
+.location {
+  margin: 0 0 0.75rem 0;
+  color: #4a5568;
+  font-size: 0.95rem;
+}
+
+.details {
+  display: flex;
+  gap: 1rem;
+}
+
+.details span {
+  color: #718096;
+  font-size: 0.9rem;
+  background-color: #f7fafc;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.priceInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.price {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #3182ce;
+  margin-bottom: 0.25rem;
+}
+
+.date {
+  font-size: 0.85rem;
+  color: #a0aec0;
+}
+
+.buttonContainer {
+  margin-top: 2rem;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.backButton {
+  background-color: #4a5568;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.backButton:hover {
+  background-color: #2d3748;
+}
+
+@media (max-width: 600px) {
+  .apartmentItem {
+    flex-direction: column;
+  }
+  
+  .priceInfo {
+    margin-top: 1rem;
+    align-items: flex-start;
+  }
+  
+  .title {
+    font-size: 1.5rem;
+  }
+  
+  .description {
+    font-size: 1rem;
+  }
+} 
