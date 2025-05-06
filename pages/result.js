@@ -7,6 +7,7 @@ import styles from '../styles/Result.module.css'
 import { useFormData } from '../context/FormContext'
 import dynamic from 'next/dynamic'
 import axios from 'axios'
+import { getApiUrl, API_ENDPOINTS } from "../utils/api";
 
 // Lottie 컴포넌트를 클라이언트 사이드에서만 렌더링하도록 설정
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false })
@@ -17,133 +18,12 @@ export default function Result() {
   const { formData } = useFormData()
   const [activeTab, setActiveTab] = useState('gap')
   const [apartments, setApartments] = useState([])
+  const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [maxPurchaseAmount, setMaxPurchaseAmount] = useState({ live: 0, gap: 0 })
+  const [apiError, setApiError] = useState(false)
   
   console.log('Result 페이지 렌더링:', { formData })
-  
-  // 하드코딩된 아파트 목업 데이터 (fallback으로만 사용)
-  const mockApartments = {
-    live: [
-      {
-        id: '0',
-        name: '한국아파트',
-        location: '성동구 금호동',
-        size: '24평',
-        price: '13억 7,250만 원'
-      },
-      {
-        id: '1',
-        name: '대한아파트',
-        location: '강남구 역삼동',
-        size: '32평',
-        price: '28억 5,000만 원'
-      },
-      {
-        id: '2',
-        name: '서울아파트',
-        location: '서초구 서초동',
-        size: '28평',
-        price: '22억 3,500만 원'
-      },
-      {
-        id: '3',
-        name: '현대아파트',
-        location: '송파구 잠실동',
-        size: '35평',
-        price: '32억 8,000만 원'
-      },
-      {
-        id: '4',
-        name: '삼성아파트',
-        location: '마포구 공덕동',
-        size: '26평',
-        price: '18억 9,500만 원'
-      }
-    ],
-    gap: [
-      {
-        id: '5',
-        name: '롯데아파트',
-        location: '용산구 한남동',
-        size: '30평',
-        price: '25억 2,000만 원'
-      },
-      {
-        id: '6',
-        name: 'LG아파트',
-        location: '영등포구 여의도동',
-        size: '33평',
-        price: '30억 1,500만 원'
-      },
-      {
-        id: '7',
-        name: 'SK아파트',
-        location: '강동구 천호동',
-        size: '27평',
-        price: '19억 6,000만 원'
-      },
-      {
-        id: '8',
-        name: 'KT아파트',
-        location: '노원구 상계동',
-        size: '29평',
-        price: '21억 4,500만 원'
-      },
-      {
-        id: '9',
-        name: '포스코아파트',
-        location: '관악구 신림동',
-        size: '25평',
-        price: '16억 8,000만 원'
-      }
-    ]
-  }
-
-  // 뒤로가기
-  const handleBack = () => {
-    router.push('/filter')
-  }
-
-  // 소득·자산 수정 페이지로 이동
-  const handleEditIncome = () => {
-    router.push('/income')
-  }
-
-  // 공유하기
-  const handleShare = async () => {
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: '내 소득에 딱 맞는 서울 부동산 찾기',
-          text: `${formData.nickname || '사용자'}님을 위한 부동산 추천 결과입니다.`,
-          url: window.location.href
-        })
-      } else {
-        alert('공유하기 기능을 지원하지 않는 브라우저입니다.')
-      }
-    } catch (error) {
-      console.error('공유하기 오류:', error)
-    }
-  }
-
-  // 문자열 가격(xx억 xx,xxx만 원)을 반환하는 함수
-  const formatPrice = (price) => {
-    if (!price) return '0원';
-    
-    const billion = Math.floor(price / 100000000);
-    const million = Math.floor((price % 100000000) / 10000);
-    
-    if (billion > 0 && million > 0) {
-      return `${billion}억 ${million.toLocaleString()}만 원`;
-    } else if (billion > 0) {
-      return `${billion}억 원`;
-    } else if (million > 0) {
-      return `${million.toLocaleString()}만 원`;
-    } else {
-      return '0원';
-    }
-  };
 
   // 최대 구매 가능 금액 계산 함수
   const calculateMaxPurchaseAmount = (income, assets) => {
@@ -198,7 +78,25 @@ export default function Result() {
     };
   };
 
-  // 데이터 로드 (sessionStorage에서 가져옴)
+  // 문자열 가격(xx억 xx,xxx만 원)을 반환하는 함수
+  const formatPrice = (price) => {
+    if (!price) return '0원';
+    
+    const billion = Math.floor(price / 100000000);
+    const million = Math.floor((price % 100000000) / 10000);
+    
+    if (billion > 0 && million > 0) {
+      return `${billion}억 ${million.toLocaleString()}만 원`;
+    } else if (billion > 0) {
+      return `${billion}억 원`;
+    } else if (million > 0) {
+      return `${million.toLocaleString()}만 원`;
+    } else {
+      return '0원';
+    }
+  };
+
+  // 데이터 로드
   useEffect(() => {
     // 브라우저에서만 실행
     if (typeof window !== 'undefined') {
@@ -217,6 +115,7 @@ export default function Result() {
         
         // 백엔드 API에서 아파트 데이터 가져오기
         const fetchApartmentsData = async () => {
+          setLoading(true);
           try {
             // FormData에서 소득과 자산 값 가져오기
             const income = parseInt(formData.income, 10) || 5000; // 기본값 5000만원
@@ -224,68 +123,114 @@ export default function Result() {
             
             // 실제 금액 값과 필터 조건 설정
             const params = {
+              mode: activeTab,
               income: income,
-              assets: assets,
-              investmentType: activeTab,
-              households: formData.household || '300세대 이상',
-              yearBuilt: formData.year || '25년 이상'
+              cash: assets,
+              lawdCd: formData.region || '전체',
+              dealYmd: '202404'
             };
             
             console.log('API 호출 파라미터:', params);
             
-            const response = await axios.get('http://localhost:4000/api/apartments', {
-              params
-            });
-            const apiData = response.data;
-            
-            console.log('API에서 데이터 로드:', apiData);
-            
-            // 데이터 세션 스토리지에 저장
-            sessionStorage.setItem('apartmentsData', JSON.stringify(apiData));
-            
-            // 현재 활성 탭에 해당하는 데이터 설정
-            setApartments(apiData[activeTab] || []);
+            // recommend API 호출
+            try {
+              console.log('API 호출 시작:', getApiUrl(API_ENDPOINTS.RECOMMEND));
+              const recommendResponse = await axios.get(getApiUrl(API_ENDPOINTS.RECOMMEND), { 
+                params,
+                timeout: 10000 // 10초 타임아웃 설정
+              });
+              
+              console.log('추천 API 응답 상태:', recommendResponse.status);
+              console.log('추천 API 응답 데이터:', recommendResponse.data ? '데이터 있음' : '데이터 없음');
+              
+              if (recommendResponse.data && recommendResponse.data.result && recommendResponse.data.result.length > 0) {
+                // API 응답 데이터 변환
+                const formattedData = recommendResponse.data.result.map(apt => ({
+                  id: apt.id || String(Math.random()).slice(2, 10),
+                  name: apt.아파트,
+                  location: apt.법정동,
+                  size: apt.size || `${Math.round(apt.전용면적 / 3.3)}평`,
+                  price: `${Math.floor(parseInt(apt.거래금액) / 10000)}억 ${parseInt(apt.거래금액) % 10000 > 0 ? parseInt(apt.거래금액) % 10000 + '만 ' : ''}원`,
+                  priceValue: parseInt(apt.거래금액),
+                  sqm: apt.전용면적,
+                  floor: apt.층,
+                  year: apt.건축년도,
+                  date: `${apt.년}-${apt.월}-${apt.일}`,
+                  households: apt.세대수,
+                  jeonsePrice: apt.전세가 ? `${Math.floor(parseInt(apt.전세가) / 10000)}억 ${parseInt(apt.전세가) % 10000 > 0 ? parseInt(apt.전세가) % 10000 + '만 ' : ''}원` : '정보 없음',
+                  jeonsePriceValue: parseInt(apt.전세가) || 0
+                }));
+                
+                console.log('포맷된 데이터:', formattedData);
+                setApartments(formattedData);
+                setApiError(false);
+                
+                // 세션 스토리지에 데이터 저장
+                const storageData = {
+                  live: activeTab === 'live' ? formattedData : [],
+                  gap: activeTab === 'gap' ? formattedData : []
+                };
+                sessionStorage.setItem('apartmentsData', JSON.stringify(storageData));
+              } else {
+                // 응답은 성공했지만 데이터가 없는 경우
+                console.warn('API 응답에 아파트 데이터가 없습니다');
+                setApiError(true);
+              }
+            } catch (error) {
+              console.error('API 호출 오류:', error);
+              setApiError(true);
+            } finally {
+              setLoading(false);
+            }
           } catch (error) {
-            console.error('API 데이터 로드 오류:', error);
-            // 에러 발생 시 세션 스토리지 또는 목업 데이터 사용
-            fallbackToStoredData();
+            console.error('데이터 로드 오류:', error);
+            setLoading(false);
+            setApiError(true);
           }
         };
         
-        // 세션 스토리지 또는 목업 데이터로 폴백
-        const fallbackToStoredData = () => {
-          // sessionStorage에서 데이터 가져오기
-          const storedData = sessionStorage.getItem('apartmentsData')
-          if (storedData) {
-            const parsedData = JSON.parse(storedData)
-            console.log('세션스토리지에서 데이터 로드:', parsedData)
-            setApartments(parsedData[activeTab] || [])
-          } else {
-            // 저장된 데이터가 없으면 목업 데이터 사용
-            console.log('저장된 데이터 없음, 목업 데이터 사용')
-            setApartments(mockApartments[activeTab] || [])
-          }
-        };
-        
-        // API 데이터 로드
         fetchApartmentsData();
       } catch (error) {
-        console.error('데이터 로드 오류:', error)
-        setApartments(mockApartments[activeTab] || [])
-        
-        // 오류 발생 시에도 계산 시도
-        const maxAmounts = calculateMaxPurchaseAmount(formData.income, formData.assets);
-        setMaxPurchaseAmount(maxAmounts);
+        console.error('데이터 로드 오류:', error);
+        setLoading(false);
+        setApiError(true);
       }
     }
-  }, [activeTab, formData.income, formData.assets, formData.household, formData.year])
+  }, [formData, activeTab]);
+  
+  // 뒤로가기
+  const handleBack = () => {
+    router.push('/filter')
+  }
 
-  // 탭 전환 핸들러
+  // 소득·자산 수정 페이지로 이동
+  const handleEditIncome = () => {
+    router.push('/income')
+  }
+
+  // 공유하기
+  const handleShare = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: '내 소득에 딱 맞는 서울 부동산 찾기',
+          text: `${formData.nickname || '사용자'}님을 위한 부동산 추천 결과입니다.`,
+          url: window.location.href
+        })
+      } else {
+        alert('공유하기 기능을 지원하지 않는 브라우저입니다.')
+      }
+    } catch (error) {
+      console.error('공유하기 오류:', error)
+    }
+  }
+
+  // 탭 변경 처리
   const handleTabChange = (tab) => {
     setActiveTab(tab)
   }
 
-  // 모달 열기/닫기
+  // 모달 토글
   const toggleModal = () => {
     setShowModal(!showModal);
   };
@@ -326,7 +271,7 @@ export default function Result() {
           </h1>
 
           <div className={styles.tabs}>
-            <button 
+          <button 
               className={`${styles.tab} ${activeTab === 'gap' ? styles.active : ''}`}
               onClick={() => handleTabChange('gap')}
             >
@@ -344,7 +289,7 @@ export default function Result() {
         <div className={styles.scrollContent}>
           <div className={styles.maxAmountContainer}>
             <p className={styles.maxAmount}>
-              {formatPrice(maxPurchaseAmount[activeTab])}까지 가능해요
+              {formatPrice(maxPurchaseAmount[activeTab] * 10000)}까지 가능해요
               <button className={styles.questionButton} onClick={toggleModal}>
                 <Image 
                   src="/ic_question.svg" 
@@ -357,7 +302,19 @@ export default function Result() {
           </div>
           <p className={styles.apartmentCount}>총 {apartments.length}개의 아파트</p>
 
-          {apartments.length > 0 ? (
+          {loading ? (
+            <div className={styles.loadingContainer}>
+              <div className={styles.spinner} />
+              <p>부동산 정보를 불러오는 중...</p>
+            </div>
+          ) : apiError ? (
+            <div className={styles.errorContainer}>
+              <p>데이터를 불러오지 못했습니다</p>
+              <button onClick={() => window.location.reload()} className={styles.retryButton}>
+                다시 시도
+              </button>
+            </div>
+          ) : apartments.length > 0 ? (
             <div className={styles.apartmentList}>
               {apartments.map((apartment) => (
                 <Link

@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic'
 import Head from 'next/head'
 import axios from 'axios'
 import Link from 'next/link'
+import { getApiUrl, API_ENDPOINTS } from "../../utils/api";
 
 // html2canvas를 클라이언트 사이드에서만 로드합니다
 const Html2Canvas = dynamic(() => import('html2canvas'), { ssr: false })
@@ -56,46 +57,77 @@ export default function ApartmentDetail() {
     // API 또는 세션스토리지에서 모든 아파트 데이터 가져오기
     const fetchApartmentData = async () => {
       try {
-        // 먼저 sessionStorage 확인
-        const storedData = sessionStorage.getItem('apartmentsData')
+        // 먼저 추천 API 호출
+        const recommendResponse = await axios.get(getApiUrl(API_ENDPOINTS.RECOMMEND));
         
-        if (storedData) {
-          const parsedData = JSON.parse(storedData)
-          // live와 gap 배열 합치기
-          const combinedApartments = [...parsedData.live, ...parsedData.gap]
-          setAllApartments(combinedApartments)
-        } else {
-          // sessionStorage에 없으면 API 직접 호출
-          const response = await axios.get('http://localhost:4000/api/apartments')
-          const apiData = response.data
-          // live와 gap 배열 합치기
-          const combinedApartments = [...apiData.live, ...apiData.gap]
-          setAllApartments(combinedApartments)
+        if (recommendResponse.data && recommendResponse.data.result && recommendResponse.data.result.length > 0) {
+          // 추천 API 결과를 변환하여 기존 형식에 맞게 처리
+          const formattedData = recommendResponse.data.result.map(apt => ({
+            id: apt.id || String(Math.random()).slice(2, 10),
+            name: apt.아파트,
+            location: apt.법정동,
+            size: apt.size || `${Math.round(apt.전용면적 / 3.3)}평`,
+            price: `${Math.floor(parseInt(apt.거래금액) / 10000)}억 ${parseInt(apt.거래금액) % 10000 > 0 ? parseInt(apt.거래금액) % 10000 + '만 ' : ''}원`,
+            sqm: apt.전용면적,
+            floor: apt.층,
+            year: apt.건축년도,
+            date: `${apt.년}-${apt.월}-${apt.일}`,
+            households: apt.세대수,
+            jeonsePrice: apt.전세가 ? `${Math.floor(parseInt(apt.전세가) / 10000)}억 ${parseInt(apt.전세가) % 10000 > 0 ? parseInt(apt.전세가) % 10000 + '만 ' : ''}원` : '정보 없음',
+            jeonsePriceValue: parseInt(apt.전세가) || 0,
+            priceValue: parseInt(apt.거래금액)
+          }));
+          
+          setAllApartments(formattedData);
           
           // 데이터 저장
-          sessionStorage.setItem('apartmentsData', JSON.stringify(apiData))
+          const storageData = {
+            live: formattedData,
+            gap: formattedData
+          };
+          sessionStorage.setItem('apartmentsData', JSON.stringify(storageData));
+        } else {
+          // 세션스토리지에서 데이터 확인
+          const storedData = sessionStorage.getItem('apartmentsData');
+          
+          if (storedData) {
+            const parsedData = JSON.parse(storedData);
+            // live와 gap 배열 합치기
+            const combinedApartments = [...parsedData.live, ...parsedData.gap];
+            setAllApartments(combinedApartments);
+          } else {
+            throw new Error('API와 저장된 데이터 모두 없음');
+          }
         }
       } catch (error) {
-        console.error('아파트 데이터 가져오기 오류:', error)
+        console.error('아파트 데이터 가져오기 오류:', error);
         // 오류 시 샘플 데이터 사용
-        setAllApartments(sampleApartments)
+        setAllApartments(sampleApartments.map((apt, index) => ({
+          ...apt,
+          id: String(index),
+          floor: '10',
+          year: '2015',
+          sqm: '84'
+        })));
+      } finally {
+        setLoading(false);
       }
-    }
+    };
     
-    fetchApartmentData()
-  }, [])
+    fetchApartmentData();
+  }, []);
 
   useEffect(() => {
     if (id !== undefined && allApartments.length > 0) {
       // id에 해당하는 아파트 찾기
-      const apt = allApartments.find(a => a.id === id) || allApartments[0]
+      const apt = allApartments.find(a => a.id === id) || allApartments[0];
       
       if (apt) {
-        setApartment(apt)
+        setApartment(apt);
         
         // id를 4로 나눈 나머지를 사용하여 순차적으로 이미지 표시
-        const idNum = parseInt(id) || 0
-        setIllustrationIndex(idNum % 4)
+        const idNum = parseInt(id) || 0;
+        setIllustrationIndex(idNum % 4);
 
         // 갭투자 계산 (전세가가 있는 경우)
         if (apt.jeonsePriceValue) {
@@ -108,64 +140,63 @@ export default function ApartmentDetail() {
         }
       }
     }
-    setLoading(false)
-  }, [id, allApartments, formData.income, formData.assets])
+  }, [id, allApartments, formData.income, formData.assets]);
 
   const handleBack = () => {
-    router.push('/result')
+    router.push('/result');
   }
 
   // 이미지 저장 함수
   const handleSaveImage = async () => {
-    if (!cardRef.current || typeof window === 'undefined') return
+    if (!cardRef.current || typeof window === 'undefined') return;
     
     try {
-      setIsLoading(true)
+      setIsLoading(true);
       
       // 카드 영역을 캔버스로 변환
       const canvas = await Html2Canvas(cardRef.current, {
         scale: 2, // 고해상도를 위해 스케일 조정
         useCORS: true, // 외부 이미지 로드를 위한 CORS 활성화
         backgroundColor: null // 투명 배경
-      })
+      });
       
       // 캔버스를 이미지로 변환
-      const image = canvas.toDataURL('image/png')
+      const image = canvas.toDataURL('image/png');
       
       // 이미지 다운로드 링크 생성
-      const link = document.createElement('a')
-      link.href = image
-      link.download = `${apartment.name}-${new Date().getTime()}.png`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+      const link = document.createElement('a');
+      link.href = image;
+      link.download = `${apartment.name}-${new Date().getTime()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       
-      setIsLoading(false)
+      setIsLoading(false);
     } catch (error) {
-      console.error('이미지 저장 중 오류 발생:', error)
-      setIsLoading(false)
-      alert('이미지 저장 중 오류가 발생했습니다.')
+      console.error('이미지 저장 중 오류 발생:', error);
+      setIsLoading(false);
+      alert('이미지 저장 중 오류가 발생했습니다.');
     }
   }
 
   // 공유하기 함수
   const handleShare = async () => {
-    if (!cardRef.current || typeof window === 'undefined') return
+    if (!cardRef.current || typeof window === 'undefined') return;
     
     try {
-      setIsLoading(true)
+      setIsLoading(true);
       
       // 카드 영역을 캔버스로 변환
       const canvas = await Html2Canvas(cardRef.current, {
         scale: 2,
         useCORS: true,
         backgroundColor: null
-      })
+      });
       
       // 캔버스를 Blob으로 변환
       const blob = await new Promise(resolve => {
-        canvas.toBlob(resolve, 'image/png')
-      })
+        canvas.toBlob(resolve, 'image/png');
+      });
       
       // Web Share API가 지원되는지 확인
       if (navigator.share) {
@@ -173,24 +204,24 @@ export default function ApartmentDetail() {
           title: `${formData.nickname}님을 위한 ${apartment.name}`,
           text: `${apartment.location}에 위치한 ${apartment.name} 정보입니다. 가격: ${apartment.price}`,
           files: [new File([blob], `${apartment.name}.png`, { type: 'image/png' })]
-        })
+        });
       } else {
         // Web Share API가 지원되지 않는 경우 이미지 다운로드로 대체
-        const image = canvas.toDataURL('image/png')
-        const link = document.createElement('a')
-        link.href = image
-        link.download = `${apartment.name}-${new Date().getTime()}.png`
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        alert('공유하기가 지원되지 않는 환경입니다. 이미지가 저장되었습니다.')
+        const image = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.href = image;
+        link.download = `${apartment.name}-${new Date().getTime()}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        alert('공유하기가 지원되지 않는 환경입니다. 이미지가 저장되었습니다.');
       }
       
-      setIsLoading(false)
+      setIsLoading(false);
     } catch (error) {
-      console.error('공유하기 중 오류 발생:', error)
-      setIsLoading(false)
-      alert('공유하기 중 오류가 발생했습니다.')
+      console.error('공유하기 중 오류 발생:', error);
+      setIsLoading(false);
+      alert('공유하기 중 오류가 발생했습니다.');
     }
   }
 
@@ -199,7 +230,7 @@ export default function ApartmentDetail() {
     // 만원 단위로 계산
     const incomeWon = income * 10000; // 만원 -> 원
     const assetsWon = assets * 10000; // 만원 -> 원
-    const jeonsePriceWon = jeonsePrice * 10000; // 만원 -> 원
+    const jeonsePriceWon = jeonsePrice; // 이미 원 단위임
     
     // 신용대출 = 연소득의 120%
     const creditLoan = incomeWon * 1.2;
@@ -210,7 +241,7 @@ export default function ApartmentDetail() {
     // 결과를 만원 단위로 변환
     const result = {
       creditLoan: Math.round(creditLoan / 10000),
-      jeonse: jeonsePrice,
+      jeonse: Math.round(jeonsePriceWon / 10000),
       totalPurchasePower: Math.round(totalPurchasePower / 10000)
     };
     
@@ -219,26 +250,6 @@ export default function ApartmentDetail() {
     
     return result;
   };
-
-  if (loading) {
-    return (
-      <div className={styles.loadingContainer}>
-        <div className={styles.spinner} />
-        <p>아파트 정보를 불러오는 중...</p>
-      </div>
-    )
-  }
-
-  if (!apartment) {
-    return (
-      <div className={styles.errorContainer}>
-        <p>아파트 정보를 찾을 수 없습니다.</p>
-        <button className={styles.backButton} onClick={handleBack}>
-          돌아가기
-        </button>
-      </div>
-    )
-  }
 
   // 가격 숫자로 파싱 (예: "9억 8,000만 원" -> 98000)
   const parsePrice = (priceStr) => {
@@ -278,13 +289,33 @@ export default function ApartmentDetail() {
   };
   
   // 위치 정보 추출
-  const location = apartment.location || '';
+  const location = apartment?.location || '';
   const locationParts = location.split(' ');
   const gu = locationParts[0] || '';
   const dong = locationParts[1] || '';
 
   // 그라데이션 클래스 가져오기
   const gradientClass = gradientClasses[illustrationIndex];
+
+  if (loading) {
+    return (
+      <div className={styles.loadingContainer}>
+        <div className={styles.spinner} />
+        <p>아파트 정보를 불러오는 중...</p>
+      </div>
+    );
+  }
+
+  if (!apartment) {
+    return (
+      <div className={styles.errorContainer}>
+        <p>아파트 정보를 찾을 수 없습니다.</p>
+        <button className={styles.backButton} onClick={handleBack}>
+          돌아가기
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
@@ -299,7 +330,7 @@ export default function ApartmentDetail() {
           onClick={handleBack}
         >
           <Image 
-            src="/back-arrow.svg" 
+            src="/icon_back.svg" 
             alt="뒤로가기" 
             width={24} 
             height={24}
@@ -339,8 +370,8 @@ export default function ApartmentDetail() {
                 </div>
                 <div className={styles.illustrationContainer}>
                   <Image 
-                    src={illustrations[illustrationIndex]}
-                    alt="아파트 일러스트"
+                    src={illustrations[illustrationIndex]} 
+                    alt="아파트 일러스트" 
                     width={302}
                     height={182}
                     style={{ 
@@ -372,6 +403,13 @@ export default function ApartmentDetail() {
                 onClick={handleShare}
                 disabled={isLoading}
               >
+                <Image 
+                  src="/icon_share.svg" 
+                  alt="공유하기" 
+                  width={16} 
+                  height={16}
+                  style={{ marginRight: '6px' }}
+                />
                 {isLoading ? '처리 중...' : '공유하기'}
               </button>
             </div>
@@ -415,7 +453,7 @@ export default function ApartmentDetail() {
                 )}
               </div>
             </div>
-
+              
             {/* 갭투자 시뮬레이션 섹션 (전세가가 있는 경우) */}
             {gapInvestment && (
               <div className={styles.gapInvestmentSection}>

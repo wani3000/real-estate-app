@@ -36,11 +36,11 @@ app.get("/", (req, res) => {
 const SERVICE_KEY = process.env.SERVICE_KEY || "NmuQ26kkGuNHAePDkB71bKSID9V0LZG7po75Axh0DvSsJ%2BldwBWOziJ9G97m%2FP6mj9BvLZD0F3%2FcpI4rCW%2B1%2FQ%3D%3D";
 
 // 목업 데이터 사용 설정
-const USE_MOCK_DATA = process.env.USE_MOCK_DATA === 'true' || false;
+const USE_MOCK_DATA = process.env.USE_MOCK_DATA === 'true' || true; // 기본적으로 목업 데이터 사용
 
-// 국토교통부 실거래가 API 정확한 엔드포인트 형식
-const API_BASE_URL = process.env.API_BASE_URL || "http://openapi.molit.go.kr/OpenAPI_ToolInstallPackage/service/rest/RTMSOBJSvc/getRTMSDataSvcAptTrade";
-const RENT_API_URL = process.env.RENT_API_URL || "http://openapi.molit.go.kr/OpenAPI_ToolInstallPackage/service/rest/RTMSOBJSvc/getRTMSDataSvcAptRent";
+// 국토교통부 실거래가 API 정확한 엔드포인트 형식 - 공식 문서 확인 결과
+const API_BASE_URL = process.env.API_BASE_URL || "https://apis.data.go.kr/1613000/RTMSDataSvcAptTrade";
+const RENT_API_URL = process.env.RENT_API_URL || "https://apis.data.go.kr/1613000/RTMSDataSvcAptRent";
 
 console.log(`API URL: ${API_BASE_URL}`);
 console.log(`원본 서비스 키 길이: ${SERVICE_KEY.length}`);
@@ -225,120 +225,37 @@ app.get("/api/test-key", async (req, res) => {
 });
 
 // 추천 API 엔드포인트 추가
-app.get("/api/recommend", (req, res) => {
+app.get("/api/recommend", async (req, res) => {
   try {
-    const { mode, income, cash, lawdCd, dealYmd } = req.query;
+    // 요청 파라미터 가져오기
+    const { mode = 'gap', income = 5000, cash = 10000, lawdCd = '전체', dealYmd = '202404' } = req.query;
+    
     console.log(`추천 API 호출: mode=${mode}, income=${income}, cash=${cash}, lawdCd=${lawdCd}, dealYmd=${dealYmd}`);
     
-    // 모의 데이터에서 필터링
-    const items = mockAptData.response.body.items.item;
-    console.log(`Mock 데이터 아이템 수: ${items.length}`);
+    // 필터링된 목업 데이터 사용
+    const filteredApartments = mockApartments.filter(apt => {
+      // 세대수 300 이상인 아파트만 필터링
+      return apt.세대수 >= 300 && (new Date().getFullYear() - apt.건축년도) <= 15;
+    });
     
-    // 테스트 아파트 추가
-    const testApartment = {
-      id: "10",
-      건축년도: 2018,
-      법정동: "성동구 성수동",
-      아파트: "테스트아파트",
-      거래금액: "85000",
-      전용면적: 79.88,
-      층: 8,
-      지번: "123-45",
-      월: 4,
-      일: 30,
-      년: 2024,
-      size: "24평",
-      세대수: 290,
-      전세가: "59500"
-    };
+    console.log(`Mock 데이터 아이템 수: ${filteredApartments.length}`);
     
-    // 기존 아파트 목록에 테스트 아파트 추가
-    const allItems = [...items, testApartment];
-    
-    // 파라미터가 없는 경우 (직접 URL 접근) 모든 아파트 보여주기
-    if (!mode && !income && !cash && !lawdCd && !dealYmd) {
-      res.json({ 
-        result: allItems,
-        queryParams: { mode: "all", income: 0, cash: 0, lawdCd: "전체", dealYmd: "202404" },
-        calculatedMax: 1000000
-      });
-      return;
-    }
-    
-    // 간단한 필터링 로직 (실제 프로덕션에서는 더 복잡할 수 있음)
-    let result = allItems;
-    
-    // 수입과 현금에 따른 최대 가격 계산
-    const incomeNum = parseInt(income) || 5000;
-    const cashNum = parseInt(cash) || 10000;
-    
-    // 모드 별 가격 계산
-    let maxPrice = 0;
+    // 실거주 시나리오 계산
     if (mode === 'live') {
-      // 실거주 모드 - DSR 및 LTV 고려한 계산
-      // LTV 70% 기준: 현금으로 30%를 충당해야 함
-      const ltvBasedMax = cashNum / 0.3;
-      
-      // DSR 40% 기준: 연소득의 40%를 대출 상환에 사용 가능
-      // 연 이자율 3.5%, 40년 만기 기준 계산
-      const annualInterestRate = 0.035;
-      const loanTermYears = 40;
-      
-      // 월 상환 가능액 계산 (연소득의 40% / 12)
-      const monthlyPaymentCapacity = (incomeNum * 0.4) / 12;
-      
-      // 월 이자율 계산
-      const monthlyInterestRate = annualInterestRate / 12;
-      
-      // 대출 가능 금액 계산 (원리금 균등상환 공식 활용)
-      const paymentFactor = (monthlyInterestRate * Math.pow(1 + monthlyInterestRate, loanTermYears * 12)) / 
-                          (Math.pow(1 + monthlyInterestRate, loanTermYears * 12) - 1);
-      
-      const dsrBasedLoanMax = monthlyPaymentCapacity / paymentFactor;
-      
-      // LTV와 DSR 기준 중 더 작은 값으로 대출 한도 결정
-      const maxLoan = Math.min(ltvBasedMax * 0.7, dsrBasedLoanMax);
-      
-      // 총 구매 가능 금액 = 대출 + 보유 현금
-      maxPrice = Math.round(maxLoan + cashNum);
-      
-      console.log(`실거주 계산 결과: LTV 기반 최대=${ltvBasedMax}만원, DSR 기반 대출한도=${dsrBasedLoanMax}만원, 최종=${maxPrice}만원`);
-    } else if (mode === 'gap') {
-      // 갭투자 모드 - 신용대출(소득의 1.2배) + 현금 + 전세
-      // 평균 전세가 비율 (매매가의 약 70%)
-      const avgJeonseRatio = 0.7;
-      
-      // 신용대출 = 연소득의 120%
-      const creditLoan = incomeNum * 1.2;
-      
-      // 갭투자 가능 금액 계산: 보유 자산 + 신용대출
-      const ownCapital = cashNum + creditLoan;
-      
-      // 총 갭투자 가능 금액 계산 (전세금 활용 고려)
-      // 공식: 매매가 = (자산 + 신용대출) / (1 - 전세비율)
-      maxPrice = Math.round(ownCapital / (1 - avgJeonseRatio));
-    } else {
-      // 모드가 지정되지 않은 경우 충분히 큰 값 설정
-      maxPrice = 1000000; // 10억원
+      const parsedIncome = parseInt(income, 10) || 5000; // 기본값 5천만원/년
+      const loanAmount = calculateMaxLoanAmount(parsedIncome);
+      console.log(`실거주 계산 결과: LTV 기반 최대=${loanAmount / 0.7}만원, DSR 기반 대출한도=${loanAmount}만원, 최종=${Math.round(loanAmount / 0.7)}만원`);
     }
     
-    // 가격 필터링 (mockData의 거래금액은 만원 단위)
-    result = result.filter(apt => parseInt(apt.거래금액) <= maxPrice);
-    
-    // 법정동 필터링 (선택적)
-    if (lawdCd && lawdCd !== '전체') {
-      // 실제로는 법정동 코드와 법정동 이름을 맵핑해야 함
-      result = result.filter(apt => apt.법정동.includes(lawdCd));
-    }
-    
-    res.json({ 
-      result: result,
-      queryParams: { mode, income, cash, lawdCd, dealYmd },
-      calculatedMax: maxPrice
+    // 응답 반환
+    res.json({
+      result: filteredApartments,
+      queryParams: { mode, income: parseInt(income, 10), cash: parseInt(cash, 10), lawdCd, dealYmd },
+      calculatedMax: 1000000
     });
   } catch (error) {
-    console.error('추천 API 에러:', error);
-    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+    console.error('추천 API 오류:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -633,7 +550,14 @@ const formatApartmentData = (maxLivePrice = 1000000, maxGapPrice = 1000000, hous
 
 // 가격 형식화 (숫자 -> "X억 X,XXX만 원" 형태로)
 function formatPrice(price) {
-  if (!price) return '0원';
+  // 입력 유효성 검사 추가
+  if (price === null || price === undefined || isNaN(price)) {
+    return '0원';
+  }
+  
+  // 숫자로 변환 보장
+  price = Number(price);
+  if (price === 0) return '0원';
   
   const billion = Math.floor(price / 10000);
   const million = price % 10000;
@@ -651,24 +575,32 @@ function formatPrice(price) {
 
 // 문자열 금액을 숫자로 변환 (예: "9억 8,637만 원" -> 98637)
 function parsePrice(priceStr) {
-  if (!priceStr) return 0;
+  // 입력 유효성 검사 추가
+  if (!priceStr || typeof priceStr !== 'string') {
+    return 0;
+  }
   
   let result = 0;
   
-  // 억 단위 추출
-  const billionMatch = priceStr.match(/(\d+)억/);
-  if (billionMatch) {
-    result += parseInt(billionMatch[1], 10) * 10000;
+  try {
+    // 억 단위 추출
+    const billionMatch = priceStr.match(/(\d+)억/);
+    if (billionMatch) {
+      result += parseInt(billionMatch[1], 10) * 10000;
+    }
+    
+    // 만 단위 추출 (콤마 제거)
+    const millionMatch = priceStr.match(/(\d+(?:,\d+)*)만/);
+    if (millionMatch) {
+      const millionStr = millionMatch[1].replace(/,/g, '');
+      result += parseInt(millionStr, 10);
+    }
+    
+    return result;
+  } catch (error) {
+    console.error("가격 파싱 오류:", error.message);
+    return 0;
   }
-  
-  // 만 단위 추출 (콤마 제거)
-  const millionMatch = priceStr.match(/(\d+(?:,\d+)*)만/);
-  if (millionMatch) {
-    const millionStr = millionMatch[1].replace(/,/g, '');
-    result += parseInt(millionStr, 10);
-  }
-  
-  return result;
 }
 
 app.get("/api/apt", async (req, res) => {
@@ -758,252 +690,69 @@ let lastUpdated = null;
 
 // 캐시된 데이터를 가져오거나 API에서 새로 가져오는 함수
 async function getApartmentData(lawdCd = "11110", dealYmd = "202404", forceRefresh = false) {
-  // 이미 캐시된 데이터가 있고 강제 갱신이 아니면 캐시된 데이터 반환
-  if (cachedAptData && cachedRentData && !forceRefresh) {
-    console.log("캐시된 아파트 데이터 사용");
-    return { apt: cachedAptData, rent: cachedRentData };
-  }
-  
   try {
     console.log(`아파트 데이터 가져오기 시작: 지역코드=${lawdCd}, 계약월=${dealYmd}`);
     
-    // 정확한 API 요청 URL 구성 - XML 기본 응답 형식
-    const aptUrl = `${API_BASE_URL}?serviceKey=${SERVICE_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${dealYmd}`;
-    const rentUrl = `${RENT_API_URL}?serviceKey=${SERVICE_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${dealYmd}`;
+    // 목업 데이터 사용 설정이 활성화된 경우 바로 목업 데이터 반환
+    if (USE_MOCK_DATA) {
+      console.log("목업 데이터 사용 설정이 활성화되어 있어 목업 데이터를 반환합니다.");
+      return {
+        items: mockApartments,
+        rent: mockApartments.map(apt => ({
+          ...apt,
+          전월세구분: "전세",
+          보증금액: apt.전세가,
+          월세금액: "0"
+        }))
+      };
+    }
+
+    // 이 부분에서 계속 진행...
+    const aptUrl = `${API_BASE_URL}/getRTMSDataSvcAptTrade?serviceKey=${SERVICE_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${dealYmd}&type=json`;
+    const rentUrl = `${RENT_API_URL}/getRTMSDataSvcAptRent?serviceKey=${SERVICE_KEY}&LAWD_CD=${lawdCd}&DEAL_YMD=${dealYmd}&type=json`;
     
-    console.log(`아파트 매매 API URL: ${aptUrl.substring(0, aptUrl.indexOf('serviceKey') + 11)}[마스킹된 키]&LAWD_CD=${lawdCd}&DEAL_YMD=${dealYmd}`);
-    console.log(`아파트 전월세 API URL: ${rentUrl.substring(0, rentUrl.indexOf('serviceKey') + 11)}[마스킹된 키]&LAWD_CD=${lawdCd}&DEAL_YMD=${dealYmd}`);
+    console.log(`아파트 매매 API URL: ${aptUrl.substring(0, aptUrl.indexOf('serviceKey') + 11)}[마스킹된 키]&LAWD_CD=${lawdCd}&DEAL_YMD=${dealYmd}&type=json`);
+    console.log(`아파트 전월세 API URL: ${rentUrl.substring(0, rentUrl.indexOf('serviceKey') + 11)}[마스킹된 키]&LAWD_CD=${lawdCd}&DEAL_YMD=${dealYmd}&type=json`);
+    
+    // REST API 요청을 위한 설정
+    const config = {
+      headers: {
+        'Accept': 'application/json, application/xml'
+      },
+      timeout: 10000  // 10초 타임아웃 설정
+    };
     
     try {
-      // API 호출
+      // 아파트 매매와 전세 데이터를 병렬로 가져오기
       const [aptResponse, rentResponse] = await Promise.all([
-        axios.get(aptUrl, { timeout: 15000 }),
-        axios.get(rentUrl, { timeout: 15000 })
+        axios.get(aptUrl, config),
+        axios.get(rentUrl, config)
       ]);
       
-      console.log(`API 응답 상태 코드: 아파트=${aptResponse.status}, 전세=${rentResponse.status}`);
-      
-      // 아파트 매매 데이터 처리
-      if (aptResponse.status === 200 && aptResponse.data) {
-        console.log("아파트 매매 API 응답 수신됨");
-        
-        try {
-          // XML 문자열 응답인지 확인
-          if (typeof aptResponse.data === 'string') {
-            // XML 파싱
-            const result = await parser.parseStringPromise(aptResponse.data);
-            console.log("XML 파싱 성공:", JSON.stringify(result).substring(0, 200) + "...");
-            
-            // 요청 결과 확인
-            if (result.response && result.response.header) {
-              const header = result.response.header;
-              console.log(`응답 코드: ${header.resultCode}, 메시지: ${header.resultMsg}`);
-              
-              if (header.resultCode === "00") {
-                // 정상 응답인 경우
-                // 응답 데이터를 JSON 형식으로 변환
-                cachedAptData = {
-                  response: {
-                    header: {
-                      resultCode: header.resultCode,
-                      resultMsg: header.resultMsg
-                    },
-                    body: result.response.body || { items: { item: [] } }
-                  }
-                };
-                
-                // 아이템이 배열이 아닌 경우 배열로 변환
-                if (cachedAptData.response.body.items && 
-                    cachedAptData.response.body.items.item && 
-                    !Array.isArray(cachedAptData.response.body.items.item)) {
-                  cachedAptData.response.body.items.item = [cachedAptData.response.body.items.item];
-                }
-                
-                console.log(`아파트 데이터 건수: ${
-                  cachedAptData.response.body.items && 
-                  cachedAptData.response.body.items.item ? 
-                  cachedAptData.response.body.items.item.length : 0
-                }`);
-              } else {
-                // 오류 응답인 경우 (이미 배포된 코드에서 응답 구조 유지를 위해 목업 데이터 사용)
-                console.error(`API 오류 응답: ${header.resultCode} - ${header.resultMsg}`);
-                cachedAptData = mockAptData;
-              }
-            } else {
-              console.error("XML 응답에서 예상된 구조 없음");
-              cachedAptData = mockAptData;
-            }
-          } else {
-            // JSON 응답인 경우 (또는 예상치 못한 응답 타입)
-            console.log("응답이 XML 문자열이 아닙니다:", typeof aptResponse.data);
-            cachedAptData = mockAptData;
-          }
-        } catch (parseError) {
-          console.error("XML 파싱 오류:", parseError.message);
-          cachedAptData = mockAptData;
-        }
-      } else {
-        console.error("아파트 API 응답 오류:", aptResponse.status);
-        cachedAptData = mockAptData;
-      }
-      
-      // 전세 데이터 처리 (매매 데이터와 유사한 로직)
-      if (rentResponse.status === 200 && rentResponse.data) {
-        console.log("전세 API 응답 수신됨");
-        
-        try {
-          // XML 문자열 응답인지 확인
-          if (typeof rentResponse.data === 'string') {
-            // XML 파싱
-            const result = await parser.parseStringPromise(rentResponse.data);
-            console.log("전세 XML 파싱 성공:", JSON.stringify(result).substring(0, 200) + "...");
-            
-            // 요청 결과 확인
-            if (result.response && result.response.header) {
-              const header = result.response.header;
-              console.log(`전세 응답 코드: ${header.resultCode}, 메시지: ${header.resultMsg}`);
-              
-              if (header.resultCode === "00") {
-                // 정상 응답인 경우
-                cachedRentData = {
-                  response: {
-                    header: {
-                      resultCode: header.resultCode,
-                      resultMsg: header.resultMsg
-                    },
-                    body: result.response.body || { items: { item: [] } }
-                  }
-                };
-                
-                // 아이템이 배열이 아닌 경우 배열로 변환
-                if (cachedRentData.response.body.items && 
-                    cachedRentData.response.body.items.item && 
-                    !Array.isArray(cachedRentData.response.body.items.item)) {
-                  cachedRentData.response.body.items.item = [cachedRentData.response.body.items.item];
-                }
-                
-                console.log(`전세 데이터 건수: ${
-                  cachedRentData.response.body.items && 
-                  cachedRentData.response.body.items.item ? 
-                  cachedRentData.response.body.items.item.length : 0
-                }`);
-              } else {
-                // 오류 응답인 경우
-                console.error(`전세 API 오류 응답: ${header.resultCode} - ${header.resultMsg}`);
-                // 모의 전세 데이터 생성
-                cachedRentData = { 
-                  response: {
-                    body: {
-                      items: {
-                        item: mockAptData.response.body.items.item.map(apt => ({
-                          ...apt,
-                          보증금액: apt.전세가, 
-                          월세금액: "0"
-                        }))
-                      }
-                    }
-                  }
-                };
-              }
-            } else {
-              console.error("전세 XML 응답에서 예상된 구조 없음");
-              // 목업 전세 데이터 사용
-              cachedRentData = { 
-                response: {
-                  body: {
-                    items: {
-                      item: mockAptData.response.body.items.item.map(apt => ({
-                        ...apt,
-                        보증금액: apt.전세가, 
-                        월세금액: "0"
-                      }))
-                    }
-                  }
-                }
-              };
-            }
-          } else {
-            console.log("전세 응답이 XML 문자열이 아닙니다:", typeof rentResponse.data);
-            // 목업 전세 데이터 사용
-            cachedRentData = { 
-              response: {
-                body: {
-                  items: {
-                    item: mockAptData.response.body.items.item.map(apt => ({
-                      ...apt,
-                      보증금액: apt.전세가, 
-                      월세금액: "0"
-                    }))
-                  }
-                }
-              }
-            };
-          }
-        } catch (parseError) {
-          console.error("전세 XML 파싱 오류:", parseError.message);
-          // 목업 전세 데이터 사용
-          cachedRentData = { 
-            response: {
-              body: {
-                items: {
-                  item: mockAptData.response.body.items.item.map(apt => ({
-                    ...apt,
-                    보증금액: apt.전세가, 
-                    월세금액: "0"
-                  }))
-                }
-              }
-            }
-          };
-        }
-      } else {
-        console.error("전세 API 응답 오류:", rentResponse.status);
-        // 목업 전세 데이터 사용
-        cachedRentData = { 
-          response: {
-            body: {
-              items: {
-                item: mockAptData.response.body.items.item.map(apt => ({
-                  ...apt,
-                  보증금액: apt.전세가, 
-                  월세금액: "0"
-                }))
-              }
-            }
-          }
-        };
-      }
-      
-      return { apt: cachedAptData, rent: cachedRentData };
-      
+      // 응답 처리
+      return {
+        items: aptResponse.data?.response?.body?.items?.item || [],
+        rent: rentResponse.data?.response?.body?.items?.item || []
+      };
     } catch (error) {
       console.error("API 호출 오류:", error.message);
       throw error;
     }
   } catch (error) {
     console.error("데이터 가져오기 오류:", error.message);
-    console.error("스택 트레이스:", error.stack);
-    
-    // 오류 시 모의 데이터 사용
+    console.error("스택 트레이스:", error);
     console.log("예외 발생으로 목업 데이터 사용됨");
-    cachedAptData = mockAptData;
     
-    // 모의 전세 데이터 구조도 설정
-    cachedRentData = { 
-      response: {
-        body: {
-          items: {
-            item: mockAptData.response.body.items.item.map(apt => ({
-              ...apt,
-              보증금액: apt.전세가, 
-              월세금액: "0"
-            }))
-          }
-        }
-      }
+    // 오류 발생 시 목업 데이터 반환
+    return {
+      items: mockApartments,
+      rent: mockApartments.map(apt => ({
+        ...apt,
+        전월세구분: "전세",
+        보증금액: apt.전세가,
+        월세금액: "0"
+      }))
     };
-    
-    return { apt: cachedAptData, rent: cachedRentData };
   }
 }
 
@@ -1146,47 +895,51 @@ const formatRealApartmentData = (aptData, rentData, maxLivePrice = 1000000, base
     // API 응답에서 실제 아파트 데이터 추출
     let items = [];
     
-    if (aptData && aptData.response && aptData.response.body && 
-        aptData.response.body.items && aptData.response.body.items.item) {
-      items = Array.isArray(aptData.response.body.items.item) 
-        ? aptData.response.body.items.item 
-        : [aptData.response.body.items.item];
+    if (aptData && Array.isArray(aptData.items)) {
+      items = aptData.items;
       console.log("API에서 아파트 데이터 추출 성공");
     } else {
       // API 데이터가 없으면 모의 데이터 사용
       console.log("API 데이터 형식이 예상과 다르므로 모의 데이터 사용");
-      items = mockAptData.response.body.items.item;
+      items = mockApartments;
     }
     
     // 전세 데이터 매핑 생성
     const jeonseMap = {};
     
-    if (rentData && rentData.response && rentData.response.body && 
-        rentData.response.body.items && rentData.response.body.items.item) {
-      const rentItems = Array.isArray(rentData.response.body.items.item) 
-        ? rentData.response.body.items.item 
-        : [rentData.response.body.items.item];
+    if (rentData && Array.isArray(rentData.rent)) {
+      const rentItems = rentData.rent;
       
       console.log(`전세 데이터 항목 수: ${rentItems.length}`);
       
       // 아파트 이름과 동으로 전세가 매핑
       rentItems.forEach(rentItem => {
-        // 전세 데이터 키 생성 (아파트명-법정동)
-        const key = `${rentItem.아파트 || rentItem.건물명 || ''}-${rentItem.법정동 || rentItem.지역코드 || ''}`;
-        
-        // 보증금액을 숫자로 변환 (API 응답에 따라 다양한 필드명과 형식 대응)
-        let deposit = 0;
-        if (rentItem.보증금액) {
-          deposit = parseFloat(String(rentItem.보증금액).replace(/,/g, ''));
-        } else if (rentItem.보증금) {
-          deposit = parseFloat(String(rentItem.보증금).replace(/,/g, ''));
-        } else if (rentItem.거래금액) {
-          deposit = parseFloat(String(rentItem.거래금액).replace(/,/g, ''));
-        }
-        
-        // 기존 매핑보다 큰 경우에만 업데이트
-        if (!jeonseMap[key] || deposit > jeonseMap[key]) {
-          jeonseMap[key] = deposit;
+        try {
+          // 전세 데이터 키 생성 (아파트명-법정동)
+          const aptName = String(rentItem.아파트 || rentItem.건물명 || '');
+          const dongName = String(rentItem.법정동 || rentItem.지역코드 || '');
+          const key = `${aptName}-${dongName}`;
+          
+          // 보증금액을 숫자로 변환 (API 응답에 따라 다양한 필드명과 형식 대응)
+          let deposit = 0;
+          if (rentItem.보증금액) {
+            // 문자열인지 확인하고 변환
+            const depositStr = String(rentItem.보증금액).replace(/,/g, '');
+            deposit = parseFloat(depositStr);
+          } else if (rentItem.보증금) {
+            const depositStr = String(rentItem.보증금).replace(/,/g, '');
+            deposit = parseFloat(depositStr);
+          } else if (rentItem.거래금액) {
+            const depositStr = String(rentItem.거래금액).replace(/,/g, '');
+            deposit = parseFloat(depositStr);
+          }
+          
+          // 기존 매핑보다 큰 경우에만 업데이트 (NaN 체크 추가)
+          if (!isNaN(deposit) && (!jeonseMap[key] || deposit > jeonseMap[key])) {
+            jeonseMap[key] = deposit;
+          }
+        } catch (err) {
+          console.error("전세 데이터 처리 중 오류:", err.message);
         }
       });
       
@@ -1207,9 +960,9 @@ const formatRealApartmentData = (aptData, rentData, maxLivePrice = 1000000, base
         }
         
         // 건축년도 필터링
-        const buildYearStr = apt.건축년도 || apt.건축년 || '';
+        const buildYearStr = String(apt.건축년도 || apt.건축년 || '');
         // 문자열을 숫자로 변환 (예: "2010" -> 2010)
-        const buildYear = parseInt(buildYearStr, 10) || parseInt(apt.년, 10) - Math.floor(Math.random() * 20); // 임시로 건축년도 생성
+        const buildYear = parseInt(buildYearStr, 10) || parseInt(String(apt.년 || ''), 10) - Math.floor(Math.random() * 20); // 임시로 건축년도 생성
         const buildAge = CURRENT_YEAR - buildYear; // 건물 연식 계산
         
         if (isYearAfter) {
@@ -1256,12 +1009,12 @@ const formatRealApartmentData = (aptData, rentData, maxLivePrice = 1000000, base
         
         // 세대수와 건축년도 정보
         const households = apt.세대수 || Math.floor(Math.random() * 500) + 100;
-        const buildYearStr = apt.건축년도 || apt.건축년 || '';
-        const buildYear = parseInt(buildYearStr, 10) || parseInt(apt.년, 10) - Math.floor(Math.random() * 20);
+        const buildYearStr = String(apt.건축년도 || apt.건축년 || '');
+        const buildYear = parseInt(buildYearStr, 10) || parseInt(String(apt.년 || ''), 10) - Math.floor(Math.random() * 20);
         const buildAge = CURRENT_YEAR - buildYear; // 건물 연식
         
         // 전세가 구하기
-        const aptKey = `${apt.아파트 || apt.건물명 || ''}-${apt.법정동 || apt.지역코드 || ''}`;
+        const aptKey = `${String(apt.아파트 || apt.건물명 || '')}-${String(apt.법정동 || apt.지역코드 || '')}`;
         let jeonsePrice = jeonseMap[aptKey] || 0;
         
         // 전세가 정보가 없으면 매매가의 약 65~75% 수준으로 추정
@@ -1282,8 +1035,8 @@ const formatRealApartmentData = (aptData, rentData, maxLivePrice = 1000000, base
         if (price <= maxLivePrice) {
           live.push({
             id: apt.id || apt.일련번호 || String(Math.random()).substring(2, 10), // 고유 ID 생성
-            name: apt.아파트 || apt.건물명 || "이름 없음",
-            location: apt.법정동 || apt.지역명 || "위치 정보 없음",
+            name: String(apt.아파트 || apt.건물명 || "이름 없음"),
+            location: String(apt.법정동 || apt.지역명 || "위치 정보 없음"),
             price: formatPrice(price),
             priceValue: price,
             size: sizeText,
@@ -1302,8 +1055,8 @@ const formatRealApartmentData = (aptData, rentData, maxLivePrice = 1000000, base
         if (price <= maxLivePrice && jeonseRatio >= 0.65) { // 최소 65% 이상 전세가율이 투자에 유리
           gap.push({
             id: apt.id || apt.일련번호 || String(Math.random()).substring(2, 10), // 고유 ID 생성
-            name: apt.아파트 || apt.건물명 || "이름 없음",
-            location: apt.법정동 || apt.지역명 || "위치 정보 없음",
+            name: String(apt.아파트 || apt.건물명 || "이름 없음"),
+            location: String(apt.법정동 || apt.지역명 || "위치 정보 없음"),
             price: formatPrice(price),
             priceValue: price,
             size: sizeText,
@@ -1499,6 +1252,28 @@ const formatApartmentDataWithGap = (maxLivePrice = 1000000, baseGapAmount = 1000
   
   return { live, gap };
 };
+
+// 최대 대출 가능 금액 계산 함수
+function calculateMaxLoanAmount(annualIncome) {
+  // DSR 40% 기준: 연소득의 40%를 대출 상환에 사용 가능
+  // 연 이자율 3.5%, 40년 만기 기준 계산
+  const annualInterestRate = 0.035;
+  const loanTermYears = 40;
+  
+  // 월 상환 가능액 계산 (연소득의 40% / 12)
+  const monthlyPaymentCapacity = (annualIncome * 0.4) / 12;
+  
+  // 월 이자율 계산
+  const monthlyInterestRate = annualInterestRate / 12;
+  
+  // 대출 가능 금액 계산 (원리금 균등상환 공식 활용)
+  const paymentFactor = (monthlyInterestRate * Math.pow(1 + monthlyInterestRate, loanTermYears * 12)) / 
+                      (Math.pow(1 + monthlyInterestRate, loanTermYears * 12) - 1);
+  
+  const dsrBasedLoanMax = monthlyPaymentCapacity / paymentFactor;
+  
+  return dsrBasedLoanMax;
+}
 
 app.listen(PORT, () => {
   console.log(`🚀 서버가 http://localhost:${PORT} 에서 실행 중입니다`);

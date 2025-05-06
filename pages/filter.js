@@ -55,12 +55,22 @@ export default function Filter() {
   const handleSubmit = (e) => {
     e.preventDefault()
     
-    console.log('loading 페이지로 이동', { 
-      nickname: formData.nickname || nickname || '기본값',
-      income: formData.income || income || '기본값',
-      assets: formData.assets || assets || '기본값',
-      investmentType
-    })
+    // formData를 sessionStorage에 저장
+    try {
+      const formDataToStore = {
+        nickname: formData.nickname || nickname || '기본값',
+        income: formData.income || income || '기본값',
+        assets: formData.assets || assets || '기본값',
+        household: formData.household,
+        year: formData.year
+      };
+      
+      sessionStorage.setItem('formData', JSON.stringify(formDataToStore));
+      
+      console.log('loading 페이지로 이동', formDataToStore);
+    } catch (err) {
+      console.error('세션 스토리지 저장 오류:', err);
+    }
     
     router.push('/loading')
   }

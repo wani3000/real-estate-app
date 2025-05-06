@@ -9,7 +9,7 @@ export default function FilterModal({
   title 
 }) {
   const { formData, updateFormData } = useFormData()
-  const [selectedValue, setSelectedValue] = useState(type === 'household' ? '300세대 이상' : '25년 이상')
+  const [selectedValue, setSelectedValue] = useState(type === 'household' ? '300세대 이상' : '15년 이내')
 
   useEffect(() => {
     // 모달이 열릴 때마다 현재 formData의 값으로 selectedValue 업데이트

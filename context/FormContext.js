@@ -28,9 +28,9 @@ export function FormProvider({ children }) {
     income: '',
     assets: '',
     household: '300세대 이상',
-    year: '25년 이상',
+    year: '15년 이내',
     householdDescription: householdDescriptions['300세대 이상'],
-    yearDescription: yearDescriptions['25년 이상']
+    yearDescription: yearDescriptions['15년 이내']
   })
 
   const updateFormData = (field, value) => {

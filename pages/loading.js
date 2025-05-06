@@ -99,8 +99,25 @@ export default function Loading() {
         const income = router.query.income || 0;
         const assets = router.query.assets || 0;
         const investmentType = router.query.investmentType || 'live';
-        const households = router.query.households || '';
-        const yearBuilt = router.query.yearBuilt || '';
+        
+        // FormContext에 저장된 값을 가져오거나 쿼리 파라미터 사용
+        let households = '';
+        let yearBuilt = '';
+        
+        try {
+          // sessionStorage에서 formData 정보 확인
+          const storedFormData = JSON.parse(sessionStorage.getItem('formData'));
+          if (storedFormData) {
+            households = storedFormData.household || '';
+            yearBuilt = storedFormData.year || '';
+          }
+        } catch (err) {
+          console.error('세션 스토리지 파싱 오류:', err);
+        }
+        
+        // 세션에 없으면 쿼리 파라미터나 기본값 사용
+        households = households || router.query.households || '';
+        yearBuilt = yearBuilt || router.query.yearBuilt || '';
         
         console.log('Loading 페이지에서 데이터 준비 중:', { 
           income, assets, investmentType, households, yearBuilt 
@@ -108,7 +125,7 @@ export default function Loading() {
         
         try {
           // 새로 구현한 API 엔드포인트 호출
-          const apiUrl = `/api/apartments?income=${income}&assets=${assets}&investmentType=${investmentType}&households=${households}&yearBuilt=${yearBuilt}`;
+          const apiUrl = `/api/apartments?income=${income}&assets=${assets}&investmentType=${investmentType}&households=${encodeURIComponent(households)}&yearBuilt=${encodeURIComponent(yearBuilt)}`;
           const response = await fetch(apiUrl);
           const data = await response.json();
           

@@ -3,6 +3,7 @@ import axios from "axios";
 import styles from "../../styles/ApartmentList.module.css";
 import Head from "next/head";
 import { useRouter } from "next/router";
+import { getApiUrl, API_ENDPOINTS } from "../../utils/api";
 
 export default function ApartmentList() {
   const [aptList, setAptList] = useState([]);
@@ -13,7 +14,7 @@ export default function ApartmentList() {
   useEffect(() => {
     setLoading(true);
     axios
-      .get("http://localhost:4000/api/apt?lawdCd=11110&dealYmd=202404")
+      .get(`${getApiUrl(API_ENDPOINTS.APT)}?lawdCd=11110&dealYmd=202404`)
       .then((res) => {
         const items = res.data.response.body.items.item;
         setAptList(items);

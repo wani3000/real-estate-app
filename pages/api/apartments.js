@@ -6,7 +6,7 @@ import mockApartmentsData from './mock-apartments';
 
 // 국토교통부 API 설정
 const API_KEY = process.env.MOLIT_API_KEY || 'NmuQ26kkGuNHAePDkB71bKSID9V0LZG7po75Axh0DvSsJ+ldwBWOziJ9G97m/P6mj9BvLZD0F3/cpI4rCW+1/Q==';
-const API_BASE_URL = 'https://apis.data.go.kr/1613000/RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade';
+const API_BASE_URL = API_CONFIG.MOLIT_APT_TRADE_URL;
 
 // 원리금 균등상환 대출 계산 함수
 function calculateLoanAmount(annualIncome, interestRate, years, dsrRatio) {
@@ -171,58 +171,75 @@ export default async function handler(req, res) {
     let realApartments = [];
     
     try {
-      console.log('목업 데이터 사용하여 아파트 정보 제공');
-      
-      // 실제 API 호출 대신 항상 목업 데이터 사용
-      // XML 파싱 오류가 있으므로 목업 데이터로 대체
-      
-      /*
-      // 아래는 실제 API 호출 코드이지만, 현재는 사용하지 않음
-      // XML 파싱 오류 때문에 비활성화
+      // 실제 API 호출 시도
+      console.log('아파트 매매 실거래가 API 호출 시작');
       
       // 서울 각 구별로 API 호출 (동시 처리)
       const districtsData = await Promise.all(
         API_CONFIG.SEOUL_DISTRICTS.map(async (district) => {
           try {
-            const response = await axios.get(API_CONFIG.BASE_URL, {
+            console.log(`${district.name} 데이터 요청 중...`);
+            const response = await axios.get(API_BASE_URL, {
               params: {
                 serviceKey: API_KEY,
                 LAWD_CD: district.code,
                 DEAL_YMD: `${year}${month}`,
                 numOfRows: 100,
-                _type: 'json' // XML 대신 JSON 형식으로 응답 요청
-              }
+                type: 'json' // XML 대신 JSON 형식으로 응답 요청
+              },
+              timeout: 10000
             });
             
             // 응답 데이터 처리
             const responseData = response.data;
+            console.log(`${district.name} 응답 상태: ${response.status}`);
+            
             if (responseData && responseData.response && 
                 responseData.response.body && 
                 responseData.response.body.items) {
               
               const items = responseData.response.body.items.item || [];
               const apartments = Array.isArray(items) ? items : [items];
+              console.log(`${district.name} 아파트 데이터 ${apartments.length}건 수신`);
               
-              return apartments.map(item => ({
-                id: `${item.법정동}-${item.아파트}-${item.년}-${item.월}-${item.일}`,
-                name: item.아파트,
-                location: `${district.name} ${item.법정동}`,
-                size: `${Math.round(item.전용면적 / 3.3)}평`,
-                price: `${Math.floor(item.거래금액.replace(/,/g, '') / 10000)}억 ${item.거래금액.replace(/,/g, '') % 10000 / 1000}천`,
-                rawPrice: parseInt(item.거래금액.replace(/,/g, ''), 10) * 10000,
-                buildYear: parseInt(item.건축년도, 10),
-                age: year - parseInt(item.건축년도, 10),
-                floor: item.층,
-                date: `${item.년}-${item.월}-${item.일}`,
-                // 세대수 정보는 API에서 제공하지 않으므로 임의값 설정
-                households: Math.floor(Math.random() * 1000) + 100,
-                // 전세가는 매매가의 약 70%로 가정
-                jeonsePrice: parseInt(item.거래금액.replace(/,/g, ''), 10) * 10000 * 0.7
-              }));
+              return apartments.map(item => {
+                try {
+                  // item.거래금액이 문자열인지 숫자인지 확인하고 적절히 처리
+                  const priceValue = typeof item.거래금액 === 'string' 
+                    ? parseInt(item.거래금액.replace(/,/g, ''), 10) 
+                    : parseInt(item.거래금액, 10);
+                  
+                  // 거래 금액 변환 오류 방지
+                  if (isNaN(priceValue)) {
+                    console.log('거래금액 변환 오류:', item);
+                    return null;
+                  }
+                  
+                  return {
+                    id: `${item.법정동 || ''}-${item.아파트 || ''}-${item.년 || ''}-${item.월 || ''}-${item.일 || ''}`,
+                    name: item.아파트 || '이름 없음',
+                    location: `${district.name} ${item.법정동 || ''}`,
+                    size: `${Math.round((item.전용면적 || 0) / 3.3)}평`,
+                    price: `${Math.floor(priceValue / 10000)}억 ${priceValue % 10000 > 0 ? (priceValue % 10000) / 1000 + '천' : ''}`,
+                    rawPrice: priceValue * 10000,
+                    buildYear: parseInt(item.건축년도 || 0, 10),
+                    age: year - parseInt(item.건축년도 || 0, 10),
+                    floor: item.층 || '1',
+                    date: `${item.년 || ''}-${item.월 || ''}-${item.일 || ''}`,
+                    // 세대수 정보는 API에서 제공하지 않으므로 임의값 설정
+                    households: Math.floor(Math.random() * 1000) + 100,
+                    // 전세가는 매매가의 약 70%로 가정
+                    jeonsePrice: priceValue * 10000 * 0.7
+                  };
+                } catch (error) {
+                  console.error(`아파트 데이터 변환 오류: ${error.message}`, item);
+                  return null;
+                }
+              }).filter(item => item !== null); // 오류가 발생한 항목 제거
             }
             return [];
           } catch (error) {
-            console.error(`${district.name} 데이터 가져오기 오류:`, error);
+            console.error(`${district.name} 데이터 가져오기 오류:`, error.message);
             return [];
           }
         })
@@ -230,9 +247,18 @@ export default async function handler(req, res) {
       
       // 모든 구의 아파트 데이터를 하나의 배열로 통합
       realApartments = districtsData.flat();
-      */
+      
+      // API 호출 결과 확인
+      if (realApartments.length > 0) {
+        console.log(`API에서 총 ${realApartments.length}건의 아파트 데이터 수신 성공`);
+      } else {
+        console.log('API에서 유효한 아파트 데이터를 가져오지 못함, 목업 데이터 사용');
+        throw new Error('유효한 아파트 데이터 없음');
+      }
     } catch (error) {
       console.error('API 오류 또는 데이터 없음. 목업 데이터 사용.', error);
+      // 오류 발생 시 목업 데이터 사용
+      realApartments = [];
     }
     
     // 모의 아파트 데이터 가져오기
