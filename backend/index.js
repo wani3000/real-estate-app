@@ -16,6 +16,22 @@ try {
 app.use(cors());
 app.use(express.json());
 
+// 루트 경로 핸들러 추가
+app.get("/", (req, res) => {
+  res.json({
+    message: "서울 아파트 추천 API 서버가 정상 작동 중입니다",
+    availableEndpoints: [
+      "/api/test - 서버 연결 테스트",
+      "/api/test-key - API 키 유효성 테스트",
+      "/api/recommend - 아파트 추천 API",
+      "/api/apt - 매매 아파트 데이터",
+      "/api/rent - 전세 아파트 데이터",
+      "/api/apartments - 필터링된 아파트 데이터"
+    ],
+    version: "1.0.0"
+  });
+});
+
 // 서비스 키 설정 (환경 변수에서 로드, 없으면 기본값 사용)
 const SERVICE_KEY = process.env.SERVICE_KEY || "NmuQ26kkGuNHAePDkB71bKSID9V0LZG7po75Axh0DvSsJ%2BldwBWOziJ9G97m%2FP6mj9BvLZD0F3%2FcpI4rCW%2B1%2FQ%3D%3D";
 
