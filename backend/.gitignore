@@ -1,10 +1,6 @@
 # 노드 모듈
 node_modules/
 
-# Next.js 빌드 결과물 및 캐시
-.next/
-out/
-
 # 환경 변수 파일
 .env
 .env.local
@@ -28,9 +24,11 @@ yarn-error.log*
 ehthumbs.db
 Thumbs.db
 
+# 중복 디렉토리
+backend/
+
 # 빌드 및 임시 파일
 dist/
 build/
 tmp/
-temp/
-*.bak
+temp/ 
